@@ -324,7 +324,7 @@ def _input_type_tab(value: str, label: str, icon: str) -> rx.Component:
     return rx.el.button(
         rx.icon(icon, class_name="h-3.5 w-3.5"),
         rx.el.span(label, class_name="text-xs font-semibold"),
-        on_click=lambda: ScanState.set_input_type(value),
+        on_click=ScanState.set_input_type(value),
         class_name=rx.cond(
             ScanState.input_type == value,
             "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#E8471A] text-white shadow-sm",

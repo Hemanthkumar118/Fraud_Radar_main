@@ -1,6 +1,7 @@
 import logging
 import random
 import string
+import asyncio
 import reflex as rx
 from pathlib import Path
 
@@ -117,11 +118,13 @@ class UploadState(rx.State):
             return
 
         try:
-            with Image.open(file_path) as img:
-                img.load()
-                if img.mode not in ("RGB", "L"):
-                    img = img.convert("RGB")
-                text = pytesseract.image_to_string(img) or ""
+            def _extract_text(fp):
+                with Image.open(fp) as img:
+                    img.load()
+                    if img.mode not in ("RGB", "L"):
+                        img = img.convert("RGB")
+                    return pytesseract.image_to_string(img) or ""
+            text = await asyncio.to_thread(_extract_text, file_path)
         except Exception as e:
             logging.exception(f"OCR: {e}")
             self.upload_error = (
@@ -213,17 +216,19 @@ class UploadState(rx.State):
 
         decoded_value = ""
         try:
-            with Image.open(file_path) as img:
-                img.load()
-                results = qr_decode(img)
-                if results:
-                    raw = results[0].data
-                    if isinstance(raw, bytes):
-                        decoded_value = raw.decode(
-                            "utf-8", errors="replace"
-                        ).strip()
-                    else:
-                        decoded_value = str(raw).strip()
+            def _decode_qr(fp):
+                with Image.open(fp) as img:
+                    img.load()
+                    return qr_decode(img)
+            results = await asyncio.to_thread(_decode_qr, file_path)
+            if results:
+                raw = results[0].data
+                if isinstance(raw, bytes):
+                    decoded_value = raw.decode(
+                        "utf-8", errors="replace"
+                    ).strip()
+                else:
+                    decoded_value = str(raw).strip()
         except Exception as e:
             logging.exception(f"QR decode: {e}")
             self.upload_error = (

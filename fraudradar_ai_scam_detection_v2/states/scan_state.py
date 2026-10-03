@@ -10,10 +10,11 @@ import reflex as rx
 from typing import TypedDict
 
 try:
-    from groq import Groq
+    from groq import Groq, AsyncGroq
 except Exception:
     logging.exception("Unexpected error")
     Groq = None
+    AsyncGroq = None
 
 
 class KeywordHit(TypedDict):
@@ -523,7 +524,7 @@ class ScanState(rx.State):
         self.input_type = analysis_type
 
         try:
-            result = self._analyze_sync(analysis_text, analysis_type)
+            result = await self._analyze_async(analysis_text, analysis_type)
         except Exception as e:
             logging.exception(f"Analyze unexpected: {e}")
             result = self._heuristic_fallback(analysis_text)
@@ -803,9 +804,9 @@ class ScanState(rx.State):
             except Exception as e2:
                 logging.exception(f"scan_history insert failed: {e2}")
 
-    def _analyze_sync(self, text: str, input_type: str = "text") -> dict:
+    async def _analyze_async(self, text: str, input_type: str = "text") -> dict:
         api_key = os.getenv("GROQ_API_KEY")
-        if not api_key or Groq is None:
+        if not api_key or AsyncGroq is None:
             return self._heuristic_fallback(text)
 
         # Pre-check: if clearly a safe notification, short-circuit with low score
@@ -815,8 +816,8 @@ class ScanState(rx.State):
             context_hint = ""
 
         try:
-            client = Groq(api_key=api_key)
-            resp = client.chat.completions.create(
+            client = AsyncGroq(api_key=api_key)
+            resp = await client.chat.completions.create(
                 model="qwen/qwen3.8-27b",
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},

@@ -4,10 +4,11 @@ import reflex as rx
 from typing import TypedDict
 
 try:
-    from groq import Groq
+    from groq import Groq, AsyncGroq
 except Exception:
     logging.exception("Failed to import groq SDK")
     Groq = None
+    AsyncGroq = None
 
 MODEL_NAME = "qwen/qwen3.8-27b"
 MAX_HISTORY_MESSAGES = 12  # ~6 exchanges sent to the API, keeps token usage bounded
@@ -71,18 +72,18 @@ class AssistantState(rx.State):
     def clear_chat(self):
         self.messages = []
 
-    def _get_reply(self, history: list[ChatMsg]) -> str:
+    async def _get_reply(self, history: list[ChatMsg]) -> str:
         api_key = os.getenv("GROQ_API_KEY")
-        if not api_key or Groq is None:
+        if not api_key or AsyncGroq is None:
             return OFFLINE_FALLBACK
 
         try:
-            client = Groq(api_key=api_key, timeout=REQUEST_TIMEOUT_SECONDS)
+            client = AsyncGroq(api_key=api_key, timeout=REQUEST_TIMEOUT_SECONDS)
             msgs = [{"role": "system", "content": ASSISTANT_PROMPT}]
             for m in history[-MAX_HISTORY_MESSAGES:]:
                 msgs.append({"role": m["role"], "content": m["content"]})
 
-            resp = client.chat.completions.create(
+            resp = await client.chat.completions.create(
                 model=MODEL_NAME,
                 messages=msgs,
                 temperature=0.3,
@@ -108,7 +109,7 @@ class AssistantState(rx.State):
         )
 
     @rx.event
-    def send_message(self, form_data: dict):
+    async def send_message(self, form_data: dict):
         msg = (form_data.get("message") or "").strip()
         if not msg or self.is_thinking:
             return
@@ -120,7 +121,7 @@ class AssistantState(rx.State):
 
         history = list(self.messages)
         try:
-            reply = self._get_reply(history)
+            reply = await self._get_reply(history)
         except Exception as e:
             logging.exception(f"Assistant top-level error: {e}")
             reply = GENERIC_FALLBACK
