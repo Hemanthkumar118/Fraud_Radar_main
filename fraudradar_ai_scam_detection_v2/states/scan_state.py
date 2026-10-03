@@ -817,7 +817,7 @@ class ScanState(rx.State):
         try:
             client = Groq(api_key=api_key)
             resp = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="qwen/qwen3.8-27b",
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {

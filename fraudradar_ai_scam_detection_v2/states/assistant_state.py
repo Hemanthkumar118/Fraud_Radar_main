@@ -9,7 +9,7 @@ except Exception:
     logging.exception("Failed to import groq SDK")
     Groq = None
 
-MODEL_NAME = "llama-3.3-70b-versatile"
+MODEL_NAME = "qwen/qwen3.8-27b"
 MAX_HISTORY_MESSAGES = 12  # ~6 exchanges sent to the API, keeps token usage bounded
 REQUEST_TIMEOUT_SECONDS = 20.0
 
@@ -70,31 +70,6 @@ class AssistantState(rx.State):
     @rx.event
     def clear_chat(self):
         self.messages = []
-
-    @rx.event
-    def send_message(self, form_data: dict):
-        msg = (form_data.get("message") or "").strip()
-        if not msg or self.is_thinking:
-            return
-
-        self.messages.append({"role": "user", "content": msg})
-        self.is_thinking = True
-        # Flush this state update to the client now (clears input, shows
-        # the thinking indicator) before the blocking API call below.
-        yield rx.set_value("chat-input", "")
-
-        history = list(self.messages)
-        try:
-            reply = self._get_reply(history)
-        except Exception as e:
-            logging.exception(f"Assistant top-level error: {e}")
-            reply = GENERIC_FALLBACK
-
-        if not reply or not reply.strip():
-            reply = GENERIC_FALLBACK
-
-        self.messages.append({"role": "assistant", "content": reply})
-        self.is_thinking = False
 
     def _get_reply(self, history: list[ChatMsg]) -> str:
         api_key = os.getenv("GROQ_API_KEY")

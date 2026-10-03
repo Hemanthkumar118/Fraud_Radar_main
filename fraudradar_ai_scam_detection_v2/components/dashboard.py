@@ -208,7 +208,7 @@ def assistant_widget() -> rx.Component:
                 rx.el.div(rx.icon("sparkles", class_name="h-5 w-5 text-white"), class_name="h-11 w-11 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center"),
                 rx.el.div(
                     rx.el.p("AI Safety Assistant", class_name="text-sm font-bold text-white"),
-                    rx.el.p("Powered by Groq · Llama 3.3", class_name="text-[11px] text-white/75"),
+                    rx.el.p("Powered by Groq · Qwen 2.5", class_name="text-[11px] text-white/75"),
                 ),
                 class_name="flex items-center gap-3",
             ),
